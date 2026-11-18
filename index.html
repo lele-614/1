@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17221c">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="星愿小镇">
+<title>星愿小镇 · 生日冒险</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="game">
+  <canvas id="world" aria-label="星愿小镇游戏画面"></canvas>
+  <div class="world-grade" aria-hidden="true"></div>
+  <div class="world-grain" aria-hidden="true"></div>
+
+  <header class="hud" id="hud" aria-hidden="true">
+    <div class="brand-plaque">
+      <span class="brand-star" aria-hidden="true">✦</span>
+      <div>
+        <h1>星愿小镇</h1>
+        <p id="areaName">星愿广场</p>
+      </div>
+    </div>
+
+    <div class="quest-panel">
+      <div class="quest-heading">
+        <span>四份礼物</span>
+        <b id="questCount">0 / 4</b>
+      </div>
+      <div class="quest-slots" id="questSlots"></div>
+      <p class="quest-hint" id="questHint">先去小镇西边看看</p>
+    </div>
+
+    <div class="hud-actions">
+      <button class="pixel-icon-btn" id="soundBtn" type="button" aria-label="开启声音" aria-pressed="false">
+        <span class="sound-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      </button>
+      <button class="pixel-icon-btn" id="bagBtn" type="button" aria-label="打开礼物袋">
+        <svg viewBox="0 0 18 18" width="17" height="17" aria-hidden="true">
+          <path d="M3 6h12v9H3V6zM2.3 6h13.4M9 6v9M9 6C7 6 5.8 5 5.8 3.8c0-.9.7-1.5 1.5-1.5 1.4 0 2.4 2.1 3.1 4.7M9 6c2 0 3.2-1 3.2-2.2 0-.9-.7-1.5-1.5-1.5C9.3 2.3 8.3 4.4 7.6 7" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="badge" id="bagCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="desktop-hints" id="desktopHints" aria-hidden="true">
+    <span><kbd>WASD</kbd> / <kbd>方向键</kbd> 移动</span>
+    <span><kbd>E</kbd> 互动</span>
+  </div>
+
+  <div class="interact-prompt" id="interactPrompt" hidden>
+    <span class="interact-key">E</span>
+    <span id="interactLabel">查看</span>
+  </div>
+
+  <div class="touch-controls" id="touchControls" aria-hidden="true">
+    <div class="joystick" id="joystick">
+      <div class="joystick-ring"></div>
+      <div class="joystick-knob" id="joystickKnob"></div>
+      <span class="joystick-label">移动</span>
+    </div>
+    <div class="action-wrap">
+      <span class="action-hint" id="actionHint">互动</span>
+      <button class="action-btn" id="actionBtn" type="button" aria-label="互动">
+        <span aria-hidden="true">✦</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="dialogue" id="dialogue" hidden>
+    <div class="dialogue-portrait">
+      <div class="portrait-inner">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <path d="M30 48C21 42 18 26 19 15l28 16M90 48c9-6 12-22 11-33L73 31" fill="#e99b5f" stroke="#4b2b25" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M26 20l16 9-10 8-6-17zM94 20L78 29l10 8 6-17z" fill="#f6c5b8"/>
+          <path d="M60 103c-22 0-36-14-36-34 0-17 14-30 36-30s36 13 36 30c0 20-14 34-36 34z" fill="#e99b5f" stroke="#4b2b25" stroke-width="3"/>
+          <path d="M33 70c2-16 12-26 27-26s25 10 27 26c-6 13-16 20-27 20S39 83 33 70z" fill="#fff0d9"/>
+          <path d="M45 66c0 4 3 6 6 4M75 66c0 4-3 6-6 4" stroke="#4b2b25" stroke-width="3" stroke-linecap="round"/>
+          <path d="M57 77c2 2 4 2 6 0" stroke="#4b2b25" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M60 72l-3 4h6l-3-4z" fill="#4b2b25"/>
+          <circle cx="40" cy="78" r="4.5" fill="#ef9f99" opacity=".55"/>
+          <circle cx="80" cy="78" r="4.5" fill="#ef9f99" opacity=".55"/>
+          <path d="M91 94c12 3 18 14 11 25-6 10-19 9-23 1-3-6 3-13 9-11" fill="#f3b276" stroke="#4b2b25" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+    <div class="dialogue-body">
+      <div class="dialogue-name">阿橘 <span>星愿邮局向导</span></div>
+      <p id="dialogueText"></p>
+      <button class="dialogue-next" id="dialogueNext" type="button">继续 <span aria-hidden="true">▶</span></button>
+    </div>
+  </div>
+
+  <!-- START -->
+  <section class="start-screen" id="startScreen" aria-labelledby="startTitle">
+    <div class="start-stars" aria-hidden="true"></div>
+    <div class="start-card">
+      <p class="start-kicker">✦ 星愿邮局 · 生日限定 ✦</p>
+      <h1 id="startTitle">星愿小镇</h1>
+      <p class="start-sub">给 <b id="startName">羊羊不奇怪</b> 的生日冒险</p>
+      <div class="start-gifts" aria-hidden="true">
+        <span>👟</span><span>🛁</span><span>🕯️</span><span>🍸</span>
+      </div>
+      <p class="start-desc">四份礼物，藏在小镇的四个角落。<br>跟着石板路，把它们找回来。</p>
+      <button class="pixel-btn primary" id="startBtn" type="button">走进小镇 <span aria-hidden="true">▶</span></button>
+      <p class="start-controls"><span class="desktop-only">建议戴上耳机 · WASD / 方向键移动 · E 互动</span><span class="touch-only">建议戴上耳机 · 左侧摇杆移动 · 右侧按钮互动</span></p>
+    </div>
+  </section>
+
+  <!-- GIFT MODAL -->
+  <div class="overlay gift-overlay" id="giftOverlay" aria-hidden="true">
+    <article class="gift-card" aria-labelledby="giftTitle">
+      <p class="pixel-kicker" id="giftKicker">第一份礼物</p>
+      <div class="gift-photo-frame">
+        <img id="giftPhoto" src="assets/shoes.jpg" alt="">
+        <span class="photo-corner" aria-hidden="true">✦</span>
+      </div>
+      <h2 id="giftTitle">PUMA 黑金复古运动鞋</h2>
+      <p class="gift-desc" id="giftDesc"></p>
+      <p class="gift-note" id="giftNote"></p>
+      <button class="pixel-btn primary wide" id="giftClose" type="button">收进礼物袋</button>
+    </article>
+  </div>
+
+  <!-- BAG -->
+  <div class="overlay bag-overlay" id="bagOverlay" aria-hidden="true">
+    <section class="bag-panel" aria-labelledby="bagTitle">
+      <header class="bag-head">
+        <div>
+          <p class="pixel-kicker">YOUR LITTLE UNIVERSE</p>
+          <h2 id="bagTitle">礼物袋</h2>
+        </div>
+        <button class="pixel-btn ghost small" id="bagClose" type="button">关闭</button>
+      </header>
+      <div class="bag-grid" id="bagGrid"></div>
+      <p class="bag-footer">找到的礼物会好好收在这里。</p>
+    </section>
+  </div>
+
+  <!-- MINIGAMES -->
+  <div class="overlay minigame-overlay" id="minigameOverlay" aria-hidden="true">
+    <div class="mg-shell" id="mgShell">
+      <header class="mg-header">
+        <div>
+          <p class="pixel-kicker" id="mgKicker">礼物挑战</p>
+          <h2 id="mgTitle">追风小径</h2>
+          <p class="mg-sub" id="mgSub"></p>
+        </div>
+        <button class="pixel-btn ghost small" id="mgExit" type="button">先回去</button>
+      </header>
+
+      <div class="mg-body">
+        <!-- SHOES -->
+        <section class="mg-game shoe-game" data-game="shoes">
+          <div class="shoe-stage">
+            <div class="pixel-skyline" aria-hidden="true"></div>
+            <div class="track-panel">
+              <div class="track-lane" id="shoeTrack">
+                <div class="track-line"></div>
+                <div class="track-steps" id="shoeSteps"></div>
+                <div class="track-runner" id="shoeRunner"><canvas id="shoeRunnerCanvas" width="18" height="34" aria-hidden="true"></canvas></div>
+                <div class="track-flag">FINISH</div>
+              </div>
+              <div class="shoe-progress-row">
+                <span>风向步数 <b id="shoeProgress">0 / 6</b></span>
+                <div class="shoe-timer"><i id="shoeTimer"></i></div>
+              </div>
+            </div>
+          </div>
+          <div class="shoe-play">
+            <p class="mg-label">看准箭头，马上踩下去</p>
+            <div class="arrow-display" id="shoeArrow">↑</div>
+            <p class="mg-status" id="shoeStatus">准备中…</p>
+            <div class="dpad" id="shoeDpad">
+              <button type="button" data-dir="up" aria-label="上">↑</button>
+              <button type="button" data-dir="left" aria-label="左">←</button>
+              <button type="button" data-dir="down" aria-label="下">↓</button>
+              <button type="button" data-dir="right" aria-label="右">→</button>
+            </div>
+            <p class="mg-help">键盘方向键 / WASD 也可以</p>
+          </div>
+        </section>
+
+        <!-- SPA -->
+        <section class="mg-game spa-game" data-game="spa">
+          <div class="spa-bowl-wrap">
+            <div class="spa-steam" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="spa-bowl">
+              <div class="spa-water">
+                <span class="bubble b1"></span>
+                <span class="bubble b2"></span>
+                <span class="bubble b3"></span>
+                <span class="bubble b4"></span>
+              </div>
+              <div class="spa-foot" aria-hidden="true">
+                <span class="toe t1"></span><span class="toe t2"></span><span class="toe t3"></span><span class="toe t4"></span><span class="toe t5"></span>
+              </div>
+              <button class="spa-point p1" type="button" data-point="1" aria-label="按摩穴位一"></button>
+              <button class="spa-point p2" type="button" data-point="2" aria-label="按摩穴位二"></button>
+              <button class="spa-point p3" type="button" data-point="3" aria-label="按摩穴位三"></button>
+            </div>
+            <p class="mg-caption">38°C，是疲惫化开来的温度。</p>
+          </div>
+          <div class="spa-panel">
+            <div class="temp-readout"><span id="spaTemp">24.0</span><small>°C</small></div>
+            <div class="temp-track">
+              <div class="temp-zone"></div>
+              <i class="temp-fill" id="spaTempFill"></i>
+              <span class="temp-knob" id="spaTempKnob"></span>
+            </div>
+            <div class="temp-labels"><span>20°</span><span>38°</span><span>44°</span></div>
+            <div class="hold-progress"><i id="spaHoldBar"></i></div>
+            <p class="mg-status" id="spaStatus">把水温升到 37–39°C，并保持 3 秒</p>
+            <button class="hold-btn" id="spaHeat" type="button">按住加热</button>
+            <p class="spa-point-count">足底按摩 <b id="spaPoints">0 / 3</b></p>
+          </div>
+        </section>
+
+        <!-- INCENSE -->
+        <section class="mg-game incense-game" data-game="incense">
+          <div class="incense-top">
+            <div class="recipe-scroll">
+              <p class="pixel-kicker">香谱残页</p>
+              <p class="recipe-poem">“清晨的柑橘先醒来；<br>木香里藏着一朵玫瑰；<br>最后，暖甜的肉桂落下来。”</p>
+            </div>
+            <div class="recipe-slots" id="incenseSlots">
+              <div class="recipe-slot" data-slot="0"><span>前调</span><b>—</b></div>
+              <div class="recipe-slot" data-slot="1"><span>中调</span><b>—</b></div>
+              <div class="recipe-slot" data-slot="2"><span>后调</span><b>—</b></div>
+            </div>
+          </div>
+          <div class="scent-grid" id="scentGrid"></div>
+          <div class="incense-burner" aria-hidden="true">
+            <div class="burner-smoke"><i></i><i></i><i></i></div>
+            <div class="burner-bowl"></div>
+          </div>
+          <p class="mg-status" id="incenseStatus">按香谱的顺序，点选三味香</p>
+        </section>
+
+        <!-- COCKTAIL -->
+        <section class="mg-game cocktail-game" data-game="vodka">
+          <div class="bar-scene">
+            <div class="bar-lights" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="cocktail-glass">
+              <div class="glass-stem"></div>
+              <div class="glass-base"></div>
+              <div class="glass-body">
+                <div class="drink-layer layer-vodka" id="layerVodka"></div>
+                <div class="drink-layer layer-juice" id="layerJuice"></div>
+                <div class="drink-layer layer-soda" id="layerSoda"></div>
+                <span class="glass-shine"></span>
+                <span class="glass-cherry" id="glassCherry">🍒</span>
+              </div>
+            </div>
+            <p class="mg-caption">一杯只属于今晚的「星愿特调」</p>
+          </div>
+          <div class="cocktail-panel">
+            <p class="pixel-kicker">RECIPE IN PROGRESS</p>
+            <div class="cocktail-step-row">
+              <span id="cocktailStep">1 / 3</span>
+              <h3 id="cocktailIngredient">伏特加</h3>
+              <p id="cocktailTarget">目标 30ml</p>
+            </div>
+            <div class="pour-track">
+              <div class="pour-band" id="pourBand"></div>
+              <div class="pour-fill" id="pourFill"></div>
+              <span class="pour-knob" id="pourKnob"></span>
+            </div>
+            <div class="pour-readout"><b id="pourAmount">0</b> ml <span id="pourTip">按住倒入</span></div>
+            <button class="hold-btn" id="pourBtn" type="button">按住倒入</button>
+            <button class="pixel-btn primary" id="garnishBtn" type="button" hidden>放上小樱桃 ✦</button>
+            <p class="mg-status" id="cocktailStatus">先倒 30ml 伏特加</p>
+            <div class="cocktail-dots" id="cocktailDots"><i></i><i></i><i></i></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="mg-success" id="mgSuccess" hidden>
+        <span class="mg-success-star" aria-hidden="true">✦</span>
+        <h3>挑战完成</h3>
+        <p>礼物出现了</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINALE -->
+  <div class="overlay finale-overlay" id="finaleOverlay" aria-hidden="true">
+    <div class="finale-stars" aria-hidden="true"></div>
+    <div class="finale-panel">
+      <div class="finale-cake-scene" id="finaleCakeScene">
+        <p class="pixel-kicker">THE LAST PAGE</p>
+        <h2>最后一颗星星，回家了。</h2>
+        <p class="finale-sub">四份礼物，和一句藏了很久的话。</p>
+        <button class="pixel-cake" id="cakeBtn" type="button" aria-label="点击蛋糕许愿">
+          <span class="cake-halo" aria-hidden="true"></span>
+          <span class="cake-plate"></span>
+          <span class="cake-body">
+            <span class="cake-icing"></span>
+            <span class="cake-sprinkles"></span>
+          </span>
+          <span class="cake-candle c1"><i></i></span>
+          <span class="cake-candle c2"><i></i></span>
+          <span class="cake-candle c3"><i></i></span>
+          <span class="cake-text">HAPPY BIRTHDAY</span>
+        </button>
+        <p class="cake-hint">点一下蛋糕，闭上眼睛许个愿</p>
+        <div class="finale-gift-row" id="finaleGiftRow"></div>
+      </div>
+
+      <div class="finale-letter" id="finaleLetter" hidden>
+        <p class="pixel-kicker">FOR <span id="letterName">羊羊不奇怪</span></p>
+        <h2>生日快乐</h2>
+        <div class="finale-photos" id="finalePhotos"></div>
+        <div class="letter-copy" id="letterCopy"></div>
+        <p class="letter-sign">—— <span id="letterSign">爱你的我</span></p>
+        <button class="pixel-btn primary" id="replayBtn" type="button">再走一遍</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
